@@ -20,7 +20,9 @@ class BayesianOptimization(BaseSolver):
                  output_path=None,
                  train_interval=1,
                  n_restarts=1,
-                 rng=None):
+                 rng=None,
+                 initial_x=None, 
+                 initial_y=None):
         """
         Implementation of the standard Bayesian optimization loop that uses
         an acquisition function and a model to optimize a given objective_func.
@@ -66,8 +68,8 @@ class BayesianOptimization(BaseSolver):
         self.start_time = time.time()
         self.initial_design = initial_design
         self.objective_func = objective_func
-        self.X = None
-        self.y = None
+        self.X = initial_x
+        self.y = initial_y
         self.time_func_evals = []
         self.time_overhead = []
         self.train_interval = train_interval

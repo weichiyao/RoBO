@@ -153,7 +153,7 @@ def bayesian_optimization(
         model = DNGO(
             batch_size=nn_config['bs'], 
             num_epochs=nn_config['max_epochs'],
-            learning_rate=nn_config['lr']
+            learning_rate=nn_config['lr'],
             n_hidden=nn_config['n_hidden'], 
             n_layers=nn_config['n_layers'],
             layer_div=nn_config['layer_div']

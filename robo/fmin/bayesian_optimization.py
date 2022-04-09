@@ -3,10 +3,11 @@ import george
 import torch
 import numpy as np
 from functools import partial
-from pybnn.dngo import DNGO
+# from pybnn.dngo import DNGO
 
 from robo.priors.default_priors import DefaultPrior
 from robo.models.wrapper_bohamiann import WrapperBohamiann
+from robo.models.flexible_dngo import DNGO
 from robo.models.gaussian_process import GaussianProcess
 from robo.models.gaussian_process_mcmc import GaussianProcessMCMC
 from robo.models.random_forest import RandomForest

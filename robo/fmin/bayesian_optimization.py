@@ -151,7 +151,7 @@ def bayesian_optimization(
 
     elif model_type == "dngo":
         model = DNGO(
-            batch_size=nn_config['bs'], 
+            batch_size=nn_config['batch_size'], 
             num_epochs=nn_config['max_epochs'],
             learning_rate=nn_config['lr'],
             n_hidden=nn_config['n_hidden'], 

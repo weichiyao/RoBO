@@ -1,7 +1,8 @@
 import logging
 import george
+import torch
 import numpy as np
-
+from functools import partial
 from pybnn.dngo import DNGO
 
 from robo.priors.default_priors import DefaultPrior
@@ -23,10 +24,43 @@ from robo.initial_design import init_latin_hypercube_sampling
 
 logger = logging.getLogger(__name__)
 
+def get_default_network(input_dimensionality: int, n_hidden: int, n_layers: int, layer_div: int) -> torch.nn.Module:
+    class AppendLayer(torch.nn.Module):
+        def __init__(self, bias=True, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if bias:
+                self.bias = torch.nn.Parameter(torch.FloatTensor(1, 1))
+            else:
+                self.register_parameter('bias', None)
 
-def bayesian_optimization(objective_function, lower, upper, num_iterations=30, X_init=None, Y_init=None,
-                          maximizer="random", acquisition_func="log_ei", model_type="gp_mcmc",
-                          n_init=3, rng=None, output_path=None):
+        def forward(self, x):
+            return torch.cat((x, self.bias * torch.ones_like(x)), dim=1)
+
+    def init_weights(module):
+        if type(module) == AppendLayer:
+            torch.nn.init.constant_(module.bias, val=np.log(1e-2))
+        elif type(module) == torch.nn.Linear:
+            torch.nn.init.kaiming_normal_(module.weight, mode="fan_in", nonlinearity="linear")
+            torch.nn.init.constant_(module.bias, val=0.0)
+    
+    Layers = []
+    Layers.append(torch.nn.Linear(input_dimensionality, n_hidden))
+    for _ in range(1,n_layers-1):    
+        Layers.append(torch.nn.Tanh())
+        Layers.append(torch.nn.Linear(n_hidden, n_hidden//layer_div))
+        n_hidden //= layer_div
+    Layers.append(torch.nn.SiLU())
+    Layers.append(torch.nn.Linear(n_hidden, 1))
+    Layers.append(AppendLayer())
+    return torch.nn.Sequential(*Layers).apply(init_weights)
+
+def bayesian_optimization(
+    objective_function, lower, upper, num_iterations=30, X_init=None, Y_init=None,
+    maximizer="random", acquisition_func="log_ei", model_type="gp_mcmc",
+    n_init=3, rng=None, output_path=None, 
+    nn_config={'n_layers':3, 'n_hidden':128, 'layer_div':2, 'lr': 1e-3, 'use_double':False,
+               'max_epochs': 1000, 'batch_size': 64}
+):
     """
     General interface for Bayesian optimization for global black box
     optimization problems.
@@ -103,10 +137,26 @@ def bayesian_optimization(objective_function, lower, upper, num_iterations=30, X
         model = RandomForest(rng=rng)
 
     elif model_type == "bohamiann":
-        model = WrapperBohamiann()
+        model = WrapperBohamiann(
+            get_net=partial(
+                get_default_network,  
+                n_hidden=nn_config['n_hidden'], 
+                n_layers=nn_config['n_layers'],
+                layer_div=nn_config['layer_div']
+            ),
+            lr=nn_config['lr'], 
+            use_double_precision=nn_config['use_double']
+        )
 
     elif model_type == "dngo":
-        model = DNGO()
+        model = DNGO(
+            batch_size=nn_config['bs'], 
+            num_epochs=nn_config['max_epochs'],
+            learning_rate=nn_config['lr']
+            n_hidden=nn_config['n_hidden'], 
+            n_layers=nn_config['n_layers'],
+            layer_div=nn_config['layer_div']
+        )
 
     else:
         raise ValueError("'{}' is not a valid model".format(model_type))

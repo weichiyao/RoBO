@@ -25,7 +25,7 @@ from robo.initial_design import init_latin_hypercube_sampling
 
 logger = logging.getLogger(__name__)
 
-def get_default_network(input_dimensionality: int, n_hidden: int, n_layers: int, layer_div: int) -> torch.nn.Module:
+def get_default_network(input_dimensionality: int, *n_hidden) -> torch.nn.Module:
     class AppendLayer(torch.nn.Module):
         def __init__(self, bias=True, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -45,13 +45,13 @@ def get_default_network(input_dimensionality: int, n_hidden: int, n_layers: int,
             torch.nn.init.constant_(module.bias, val=0.0)
     
     Layers = []
-    Layers.append(torch.nn.Linear(input_dimensionality, n_hidden))
-    for _ in range(1,n_layers-1):    
-        Layers.append(torch.nn.Tanh())
-        Layers.append(torch.nn.Linear(n_hidden, n_hidden//layer_div))
-        n_hidden //= layer_div
+    Layers.append(torch.nn.Linear(input_dimensionality, n_hidden[0]))
+    for i in range(1,len(n_hidden)):    
+        Layers.append(torch.nn.SiLU())
+        Layers.append(torch.nn.Linear(n_hidden[i-1], n_hidden[i]))
+        
     Layers.append(torch.nn.SiLU())
-    Layers.append(torch.nn.Linear(n_hidden, 1))
+    Layers.append(torch.nn.Linear(n_hidden[-1], 1))
     Layers.append(AppendLayer())
     return torch.nn.Sequential(*Layers).apply(init_weights)
 
@@ -59,7 +59,7 @@ def bayesian_optimization(
     objective_function, lower, upper, num_iterations=30, X_init=None, Y_init=None,
     maximizer="random", acquisition_func="log_ei", model_type="gp_mcmc",
     n_init=3, rng=None, output_path=None, 
-    nn_config={'n_layers':3, 'n_hidden':128, 'layer_div':2, 'lr': 1e-3, 'use_double':False,
+    nn_config={'n_hidden':[784,50], 'lr': 1e-3, 'use_double':False,
                'max_epochs': 1000, 'batch_size': 64}
 ):
     """
@@ -139,12 +139,7 @@ def bayesian_optimization(
 
     elif model_type == "bohamiann":
         model = WrapperBohamiann(
-            get_net=partial(
-                get_default_network,  
-                n_hidden=nn_config['n_hidden'], 
-                n_layers=nn_config['n_layers'],
-                layer_div=nn_config['layer_div']
-            ),
+            get_net=partial(get_default_network, *nn_config['n_hidden']),
             lr=nn_config['lr'], 
             use_double_precision=nn_config['use_double']
         )
@@ -154,9 +149,7 @@ def bayesian_optimization(
             batch_size=nn_config['batch_size'], 
             num_epochs=nn_config['max_epochs'],
             learning_rate=nn_config['lr'],
-            n_hidden=nn_config['n_hidden'], 
-            n_layers=nn_config['n_layers'],
-            layer_div=nn_config['layer_div']
+            *nn_config['n_hidden']
         )
 
     else:

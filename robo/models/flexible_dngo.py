@@ -14,21 +14,20 @@ from pybnn.util.normalization import zero_mean_unit_var_normalization, zero_mean
 from pybnn.bayesian_linear_regression import BayesianLinearRegression, Prior
 
 class Net(nn.Module):
-    def __init__(self, n_in:int, n_hidden:int, n_layers:int, layer_div:int):
+    def __init__(self, n_in:int, *n_hidden):
         super(Net, self).__init__()
         # self.fc1 = nn.Linear(n_inputs, n_units[0])
         # self.fc2 = nn.Linear(n_units[0], n_units[1])
         # self.fc3 = nn.Linear(n_units[1], n_units[2])
         # self.out = nn.Linear(n_units[2], 1)
         Layers = []
-        Layers.append(nn.Linear(n_in, n_hidden))
-        for _ in range(1,n_layers-1):    
-            Layers.append(nn.Tanh())
-            Layers.append(nn.Linear(n_hidden, n_hidden//layer_div))
-            n_hidden //= layer_div
+        Layers.append(nn.Linear(n_in, n_hidden[0]))
+        for i in range(1,len(n_hidden)):    
+            Layers.append(nn.SiLU())
+            Layers.append(nn.Linear(n_hidden[i-1], n_hidden[i]))
         Layers.append(nn.SiLU())
         self.prelayers = nn.Sequential(*Layers)
-        Layers.append(nn.Linear(n_hidden, 1))
+        Layers.append(nn.Linear(n_hidden[-1], 1))
         self.alllayers = nn.Sequential(*Layers)
 
     def forward(self, x):
@@ -51,7 +50,7 @@ class DNGO(BaseModel):
     def __init__(self, batch_size=10, num_epochs=500,
                  learning_rate=0.01,
                  adapt_epoch=5000, 
-                 n_hidden=128, n_layers=3, layer_div=2,
+                 n_hidden=[784,50],
                  # n_units_1=50, n_units_2=50, n_units_3=50,
                  alpha=1.0, beta=1000, prior=None, do_mcmc=True,
                  n_hypers=20, chain_length=2000, burnin_steps=2000,
@@ -136,8 +135,6 @@ class DNGO(BaseModel):
         # self.n_units_2 = n_units_2
         # self.n_units_3 = n_units_3
         self.n_hidden = n_hidden
-        self.n_layers = n_layers
-        self.layer_div = layer_div
         self.adapt_epoch = adapt_epoch
         self.network = None
         self.models = []
@@ -184,15 +181,9 @@ class DNGO(BaseModel):
         features = X.shape[1]
 
         # self.network = Net(n_inputs=features, n_units=[self.n_units_1, self.n_units_2, self.n_units_3])
-        self.network = Net(
-            n_in=features, 
-            n_hidden=self.n_hidden, 
-            n_layers=self.n_layers, 
-            layer_div=self.layer_div
-        )
+        self.network = Net(n_in=features, *self.n_hidden)
         
-        optimizer = optim.Adam(self.network.parameters(),
-                               lr=self.init_learning_rate)
+        optimizer = optim.Adam(self.network.parameters(), lr=self.init_learning_rate)
 
         # Start training
         lc = np.zeros([self.num_epochs])

@@ -181,7 +181,7 @@ class DNGO(BaseModel):
         features = X.shape[1]
 
         # self.network = Net(n_inputs=features, n_units=[self.n_units_1, self.n_units_2, self.n_units_3])
-        self.network = Net(n_in=features, *self.n_hidden)
+        self.network = Net(features, *self.n_hidden)
         
         optimizer = optim.Adam(self.network.parameters(), lr=self.init_learning_rate)
 

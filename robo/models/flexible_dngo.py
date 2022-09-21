@@ -73,12 +73,8 @@ class DNGO(BaseModel):
             Initial learning rate for Adam
         adapt_epoch: int
             Defines after how many epochs the learning rate will be decayed by a factor 10
-        n_hidden: int
-            Number of units in the hidden layers
-        n_layers: int
-            Number of layers 
-        layer_div: int
-            Scale of the number of hidden units left in the next layer
+        n_hidden: List[int]
+            A list of number of units in the hidden layers
         alpha: float
             Hyperparameter of the Bayesian linear regression
         beta: float

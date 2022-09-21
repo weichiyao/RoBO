@@ -25,7 +25,7 @@ from robo.initial_design import init_latin_hypercube_sampling
 
 logger = logging.getLogger(__name__)
 
-def get_default_network(input_dimensionality: int, *n_hidden) -> torch.nn.Module:
+def get_default_network(input_dimensionality: int, n_hidden=[784,50]) -> torch.nn.Module:
     class AppendLayer(torch.nn.Module):
         def __init__(self, bias=True, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -139,7 +139,7 @@ def bayesian_optimization(
 
     elif model_type == "bohamiann":
         model = WrapperBohamiann(
-            get_net=partial(get_default_network, *nn_config['n_hidden']),
+            get_net=partial(get_default_network, n_hidden=nn_config['n_hidden']),
             lr=nn_config['lr'], 
             use_double_precision=nn_config['use_double']
         )
@@ -149,7 +149,7 @@ def bayesian_optimization(
             batch_size=nn_config['batch_size'], 
             num_epochs=nn_config['max_epochs'],
             learning_rate=nn_config['lr'],
-            *nn_config['n_hidden']
+            n_hidden=nn_config['n_hidden']
         )
 
     else:

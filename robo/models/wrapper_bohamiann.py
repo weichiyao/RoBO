@@ -9,7 +9,7 @@ from robo.models.base_model import BaseModel
 
 class WrapperBohamiann(BaseModel):
 
-    def __init__(self, get_net=get_default_network, transformer=lambda x:x, lr=1e-2, batch_size=10, use_double_precision=True, verbose=True):
+    def __init__(self, get_net, transformer=lambda x:x, lr=1e-2, batch_size=10, use_double_precision=True, verbose=True):
         """
         Wrapper around pybnn Bohamiann implementation. It automatically adjusts the length by the MCMC chain,
         by performing 100 times more burnin steps than we have data points and sampling ~100 networks weights.
@@ -71,18 +71,17 @@ class WrapperBohamiannMultiTask(BaseModel):
 
         self.lr = lr
         self.batch_size = batch_size
-        self.verbose = verbose
-        self.transformer = transformer
-        self.bnn = MultiTaskBohamiann(n_tasks, normalize_input=False, normalize_output=False,
+        self.verbose = verbose 
+        self.bnn = MultiTaskBohamiann(n_tasks, normalize_input=True, normalize_output=True,
                                       use_double_precision=use_double_precision)
 
     def train(self, X, y, **kwargs):
         self.X = X
         self.y = y
-        self.bnn.train(self.transformer(X), y, lr=self.lr, batch_size=self.batch_size, 
+        self.bnn.train(X, y, lr=self.lr, batch_size=self.batch_size, 
                        mdecay=0.01,
                        num_burn_in_steps=X.shape[0] * 500,
                        num_steps=X.shape[0] * 500 + 10000, verbose=self.verbose)
 
     def predict(self, X_test):
-        return self.bnn.predict(self.transformer(X_test))
+        return self.bnn.predict(X_test)

@@ -156,6 +156,7 @@ def bayesian_optimization(
             trans_rbf_prodsum=transformer_config['trans_rbf_prodsum'],
             dtype=dtype 
         )
+        print("Use {} with transformer {}".format(model_type), transformer_config['trans_method'])
         model = WrapperBohamiann(
             get_net=partial(get_default_network, n_hidden=nn_config['n_hidden']),
             transformer=transformer,
@@ -165,6 +166,10 @@ def bayesian_optimization(
         )
 
     elif model_type == "dngo":
+        if nn_config['use_double']:
+            dtype = torch.float64
+        else:
+            dtype = torch.float32
         search_domain = torch.from_numpy(np.stack([lower,upper],axis=-1))
         transformer = Transformer(
             search_domain=search_domain, 
@@ -173,6 +178,7 @@ def bayesian_optimization(
             trans_rbf_prodsum=transformer_config['trans_rbf_prodsum'],
             dtype=dtype 
         )
+        print("Use {} with transformer {}".format(model_type), transformer_config['trans_method'])
         model = DNGO(
             transformer=transformer,
             batch_size=nn_config['batch_size'], 

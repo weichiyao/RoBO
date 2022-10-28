@@ -32,7 +32,8 @@ class WrapperBohamiann(BaseModel):
         self.lr = lr
         self.verbose = verbose
         self.transformer = transformer
-        self.bnn = Bohamiann(get_network=get_net, use_double_precision=use_double_precision)
+        self.bnn = Bohamiann(get_network=get_net, normalize_input=False, normalize_output=False,
+                             use_double_precision=use_double_precision)
 
     def train(self, X, y, **kwargs):
         self.X = X
@@ -70,7 +71,7 @@ class WrapperBohamiannMultiTask(BaseModel):
         self.lr = lr
         self.verbose = verbose
         self.transformer = transformer
-        self.bnn = MultiTaskBohamiann(n_tasks,
+        self.bnn = MultiTaskBohamiann(n_tasks, normalize_input=False, normalize_output=False,
                                       use_double_precision=use_double_precision)
 
     def train(self, X, y, **kwargs):

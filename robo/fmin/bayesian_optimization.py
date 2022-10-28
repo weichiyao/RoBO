@@ -164,7 +164,16 @@ def bayesian_optimization(
         )
 
     elif model_type == "dngo":
+        search_domain = torch.from_numpy(np.stack([lower,upper],axis=-1))
+        transformer = Transformer(
+            search_domain=search_domain, 
+            trans_method=transformer_config['trans_method'], 
+            trans_rbf_nrad=transformer_config['trans_rbf_nrad'],
+            trans_rbf_prodsum=transformer_config['trans_rbf_prodsum'],
+            dtype=dtype 
+        )
         model = DNGO(
+            transformer=transformer,
             batch_size=nn_config['batch_size'], 
             num_epochs=nn_config['max_epochs'],
             learning_rate=nn_config['lr'],

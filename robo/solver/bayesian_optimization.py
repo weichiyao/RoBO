@@ -148,9 +148,10 @@ class BayesianOptimization(BaseSolver):
         else:
             self.X = X
             self.y = y
+            self.init_points = self.X.shape[0]
 
         # Main Bayesian optimization loop
-        for it in range(self.init_points, num_iterations):
+        for it in range(self.init_points, num_iterations+self.init_points):
             logger.info("Start iteration %d ... ", it)
 
             start_time = time.time()

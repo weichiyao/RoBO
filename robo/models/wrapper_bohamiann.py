@@ -9,7 +9,7 @@ from robo.models.base_model import BaseModel
 
 class WrapperBohamiann(BaseModel):
 
-    def __init__(self, get_net=get_default_network, transformer=lambda x:x, lr=1e-2, use_double_precision=True, verbose=True):
+    def __init__(self, get_net=get_default_network, transformer=lambda x:x, lr=1e-2, batch_size=10, use_double_precision=True, verbose=True):
         """
         Wrapper around pybnn Bohamiann implementation. It automatically adjusts the length by the MCMC chain,
         by performing 100 times more burnin steps than we have data points and sampling ~100 networks weights.
@@ -30,6 +30,7 @@ class WrapperBohamiann(BaseModel):
         """
 
         self.lr = lr
+        self.batch_size = batch_size
         self.verbose = verbose
         self.transformer = transformer
         self.bnn = Bohamiann(get_network=get_net, normalize_input=False, normalize_output=False,
@@ -38,7 +39,7 @@ class WrapperBohamiann(BaseModel):
     def train(self, X, y, **kwargs):
         self.X = X
         self.y = y
-        self.bnn.train(self.transformer(X), y, lr=self.lr,
+        self.bnn.train(self.transformer(X), y, lr=self.lr, batch_size=self.batch_size,
                        num_burn_in_steps=X.shape[0] * 100,
                        num_steps=X.shape[0] * 100 + 10000, verbose=self.verbose)
 
@@ -48,7 +49,7 @@ class WrapperBohamiann(BaseModel):
 
 class WrapperBohamiannMultiTask(BaseModel):
 
-    def __init__(self, n_tasks=2, transformer=lambda x:x, lr=1e-2, use_double_precision=True, verbose=False):
+    def __init__(self, n_tasks=2, transformer=lambda x:x, lr=1e-2, batch_size=10, use_double_precision=True, verbose=False):
         """
         Wrapper around pybnn Bohamiann implementation. It automatically adjusts the length by the MCMC chain,
         by performing 100 times more burnin steps than we have data points and sampling ~100 networks weights.
@@ -69,6 +70,7 @@ class WrapperBohamiannMultiTask(BaseModel):
         """
 
         self.lr = lr
+        self.batch_size = batch_size
         self.verbose = verbose
         self.transformer = transformer
         self.bnn = MultiTaskBohamiann(n_tasks, normalize_input=False, normalize_output=False,
@@ -77,7 +79,8 @@ class WrapperBohamiannMultiTask(BaseModel):
     def train(self, X, y, **kwargs):
         self.X = X
         self.y = y
-        self.bnn.train(self.transformer(X), y, lr=self.lr, mdecay=0.01,
+        self.bnn.train(self.transformer(X), y, lr=self.lr, batch_size=self.batch_size, 
+                       mdecay=0.01,
                        num_burn_in_steps=X.shape[0] * 500,
                        num_steps=X.shape[0] * 500 + 10000, verbose=self.verbose)
 

@@ -3,8 +3,10 @@ import george
 import torch
 import numpy as np
 from functools import partial
+ 
 # from pybnn.dngo import DNGO
 
+from robo.models.transformer_input import Transformer
 from robo.priors.default_priors import DefaultPrior
 from robo.models.wrapper_bohamiann import WrapperBohamiann
 from robo.models.flexible_dngo import DNGO
@@ -25,6 +27,7 @@ from robo.initial_design import init_latin_hypercube_sampling
 
 logger = logging.getLogger(__name__)
 
+
 def get_default_network(input_dimensionality: int, n_hidden=[784,50]) -> torch.nn.Module:
     class AppendLayer(torch.nn.Module):
         def __init__(self, bias=True, *args, **kwargs):
@@ -43,8 +46,9 @@ def get_default_network(input_dimensionality: int, n_hidden=[784,50]) -> torch.n
         elif type(module) == torch.nn.Linear:
             torch.nn.init.kaiming_normal_(module.weight, mode="fan_in", nonlinearity="linear")
             torch.nn.init.constant_(module.bias, val=0.0)
+            
     
-    Layers = []
+    Layers = [] 
     Layers.append(torch.nn.Linear(input_dimensionality, n_hidden[0]))
     for i in range(1,len(n_hidden)):    
         Layers.append(torch.nn.SiLU())
@@ -55,12 +59,14 @@ def get_default_network(input_dimensionality: int, n_hidden=[784,50]) -> torch.n
     Layers.append(AppendLayer())
     return torch.nn.Sequential(*Layers).apply(init_weights)
 
+
 def bayesian_optimization(
     objective_function, lower, upper, num_iterations=30, X_init=None, Y_init=None,
     maximizer="random", acquisition_func="log_ei", model_type="gp_mcmc",
     n_init=3, rng=None, output_path=None, 
     nn_config={'n_hidden':[784,50], 'lr': 1e-3, 'use_double':False,
-               'max_epochs': 1000, 'batch_size': 64}
+               'max_epochs': 1000, 'batch_size': 64},
+    transformer_config={'trans_method':'none', 'trans_rbf_nrad':3, 'trans_rbf_prodsum':True}
 ):
     """
     General interface for Bayesian optimization for global black box
@@ -138,8 +144,21 @@ def bayesian_optimization(
         model = RandomForest(rng=rng)
 
     elif model_type == "bohamiann":
+        if nn_config['use_double']:
+            dtype = torch.float64
+        else:
+            dtype = torch.float32
+        search_domain = torch.from_numpy(np.stack([lower,upper],axis=-1))
+        transformer = Transformer(
+            search_domain=search_domain, 
+            trans_method=transformer_config['trans_method'], 
+            trans_rbf_nrad=transformer_config['trans_rbf_nrad'],
+            trans_rbf_prodsum=transformer_config['trans_rbf_prodsum'],
+            dtype=dtype 
+        )
         model = WrapperBohamiann(
             get_net=partial(get_default_network, n_hidden=nn_config['n_hidden']),
+            transformer=transformer,
             lr=nn_config['lr'], 
             use_double_precision=nn_config['use_double']
         )

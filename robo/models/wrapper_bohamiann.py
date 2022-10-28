@@ -35,9 +35,9 @@ class WrapperBohamiann(BaseModel):
         self.bnn = Bohamiann(get_network=get_net, use_double_precision=use_double_precision)
 
     def train(self, X, y, **kwargs):
-        self.X = self.transformer(X)
+        self.X = X
         self.y = y
-        self.bnn.train(X, y, lr=self.lr,
+        self.bnn.train(self.transformer(X), y, lr=self.lr,
                        num_burn_in_steps=X.shape[0] * 100,
                        num_steps=X.shape[0] * 100 + 10000, verbose=self.verbose)
 
@@ -74,9 +74,9 @@ class WrapperBohamiannMultiTask(BaseModel):
                                       use_double_precision=use_double_precision)
 
     def train(self, X, y, **kwargs):
-        self.X = self.transformer(X)
+        self.X = X
         self.y = y
-        self.bnn.train(X, y, lr=self.lr, mdecay=0.01,
+        self.bnn.train(self.transformer(X), y, lr=self.lr, mdecay=0.01,
                        num_burn_in_steps=X.shape[0] * 500,
                        num_steps=X.shape[0] * 500 + 10000, verbose=self.verbose)
 

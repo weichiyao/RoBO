@@ -35,7 +35,7 @@ class Transformer(object):
         method: str="none",
         n_rad: int=50,
         prodsum: bool=False,
-        dtype: torch.float32
+        dtype=torch.float32
     ):  
         self.search_domain = search_domain 
         self.n_rad = n_rad # nrad for each dimension 

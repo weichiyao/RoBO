@@ -20,16 +20,13 @@ class BayesianOptimization(BaseSolver):
                  output_path=None,
                  train_interval=1,
                  n_restarts=1,
-                 rng=None,
-                 initial_x=None, 
-                 initial_y=None):
+                 rng=None):
         """
         Implementation of the standard Bayesian optimization loop that uses
         an acquisition function and a model to optimize a given objective_func.
         This module keeps track of additional information such as runtime,
         optimization overhead, evaluated points and saves the output
         in a json file.
-
         Parameters
         ----------
         acquisition_func: BaseAcquisitionFunctionObject
@@ -68,8 +65,8 @@ class BayesianOptimization(BaseSolver):
         self.start_time = time.time()
         self.initial_design = initial_design
         self.objective_func = objective_func
-        self.X = initial_x
-        self.y = initial_y
+        self.X = None
+        self.y = None
         self.time_func_evals = []
         self.time_overhead = []
         self.train_interval = train_interval
@@ -87,7 +84,6 @@ class BayesianOptimization(BaseSolver):
     def run(self, num_iterations=10, X=None, y=None):
         """
         The main Bayesian optimization loop
-
         Parameters
         ----------
         num_iterations: int
@@ -96,7 +92,6 @@ class BayesianOptimization(BaseSolver):
             Initial points that are already evaluated
         y: np.ndarray(N,1)
             Function values of the already evaluated points
-
         Returns
         -------
         np.ndarray(1,D)
@@ -155,7 +150,7 @@ class BayesianOptimization(BaseSolver):
             self.y = y
 
         # Main Bayesian optimization loop
-        for it in range(self.init_points, num_iterations+self.init_points):
+        for it in range(self.init_points, num_iterations):
             logger.info("Start iteration %d ... ", it)
 
             start_time = time.time()
@@ -207,7 +202,6 @@ class BayesianOptimization(BaseSolver):
     def choose_next(self, X=None, y=None, do_optimize=True):
         """
         Suggests a new point to evaluate.
-
         Parameters
         ----------
         X: np.ndarray(N,D)
@@ -261,4 +255,3 @@ class BayesianOptimization(BaseSolver):
         data["iteration"] = it
 
         json.dump(data, open(os.path.join(self.output_path, "robo_iter_%d.json" % it), "w"))
-

@@ -160,6 +160,7 @@ def bayesian_optimization(
             get_net=partial(get_default_network, n_hidden=nn_config['n_hidden']),
             transformer=transformer,
             lr=nn_config['lr'], 
+            batch_size=nn_config['batch_size'],
             use_double_precision=nn_config['use_double']
         )
 

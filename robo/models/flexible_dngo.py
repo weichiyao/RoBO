@@ -8,20 +8,20 @@ import torch.nn as nn
 import torch.optim as optim
 
 from scipy import optimize
-
 from pybnn.base_model import BaseModel
 from pybnn.util.normalization import zero_mean_unit_var_normalization, zero_mean_unit_var_denormalization
 from pybnn.bayesian_linear_regression import BayesianLinearRegression, Prior
 
 class Net(nn.Module):
-    def __init__(self, n_in:int, *n_hidden):
+    def __init__(self, transformer, *n_hidden):
         super(Net, self).__init__()
         # self.fc1 = nn.Linear(n_inputs, n_units[0])
         # self.fc2 = nn.Linear(n_units[0], n_units[1])
         # self.fc3 = nn.Linear(n_units[1], n_units[2])
         # self.out = nn.Linear(n_units[2], 1)
+        
         Layers = []
-        Layers.append(nn.Linear(n_in, n_hidden[0]))
+        Layers.append(nn.Linear(transformer.n_features, n_hidden[0]))
         for i in range(1,len(n_hidden)):    
             Layers.append(nn.SiLU())
             Layers.append(nn.Linear(n_hidden[i-1], n_hidden[i]))
@@ -29,8 +29,11 @@ class Net(nn.Module):
         self.prelayers = nn.Sequential(*Layers)
         Layers.append(nn.Linear(n_hidden[-1], 1))
         self.alllayers = nn.Sequential(*Layers)
+        
+        self.transformer = transformer
 
     def forward(self, x):
+        x = self.transformer(x)
         return self.alllayers(x)
         # x = torch.tanh(self.fc1(x))
         # x = torch.tanh(self.fc2(x))
@@ -38,6 +41,7 @@ class Net(nn.Module):
         # return self.out(x)
 
     def basis_funcs(self, x):
+        x = self.transformer(x)
         return self.prelayers(x)
         # x = torch.tanh(self.fc1(x))
         # x = torch.tanh(self.fc2(x))
@@ -50,11 +54,12 @@ class DNGO(BaseModel):
     def __init__(self, batch_size=10, num_epochs=500,
                  learning_rate=0.01,
                  adapt_epoch=5000, 
+                 transformer=lambda x: x,
                  n_hidden=[784,50],
                  # n_units_1=50, n_units_2=50, n_units_3=50,
                  alpha=1.0, beta=1000, prior=None, do_mcmc=True,
                  n_hypers=20, chain_length=2000, burnin_steps=2000,
-                 normalize_input=True, normalize_output=True, rng=None):
+                 normalize_input=False, normalize_output=False, rng=None):
         """
         Deep Networks for Global Optimization [1]. This module performs
         Bayesian Linear Regression with basis function extracted from a
@@ -105,7 +110,7 @@ class DNGO(BaseModel):
 
         self.X = None
         self.y = None
-        self.network = None
+        # self.network = None
         self.alpha = alpha
         self.beta = beta
         self.normalize_input = normalize_input
@@ -135,6 +140,9 @@ class DNGO(BaseModel):
         self.network = None
         self.models = []
         self.hypers = None
+        
+        self.transformer = transformer
+        
 
     @BaseModel._check_shapes_train
     def train(self, X, y, do_optimize=True):
@@ -158,13 +166,13 @@ class DNGO(BaseModel):
             self.X, self.X_mean, self.X_std = zero_mean_unit_var_normalization(X)
         else:
             self.X = X
-
+        
         # Normalize ouputs
         if self.normalize_output:
             self.y, self.y_mean, self.y_std = zero_mean_unit_var_normalization(y)
         else:
             self.y = y
-
+        
         self.y = self.y[:, None]
 
         # Check if we have enough points to create a minibatch otherwise use all data points
@@ -174,10 +182,10 @@ class DNGO(BaseModel):
             batch_size = self.batch_size
 
         # Create the neural network
-        features = X.shape[1]
+        # features = X.shape[1]
 
-        # self.network = Net(n_inputs=features, n_units=[self.n_units_1, self.n_units_2, self.n_units_3])
-        self.network = Net(features, *self.n_hidden)
+        # self.network = Net(features, n_units=[self.n_units_1, self.n_units_2, self.n_units_3])
+        self.network = Net(self.transformer, *self.n_hidden)
         
         optimizer = optim.Adam(self.network.parameters(), lr=self.init_learning_rate)
 
@@ -360,7 +368,7 @@ class DNGO(BaseModel):
             X_, _, _ = zero_mean_unit_var_normalization(X_test, self.X_mean, self.X_std)
         else:
             X_ = X_test
-
+        
         # Get features from the net
 
         theta = self.network.basis_funcs(torch.Tensor(X_)).data.numpy()
@@ -403,6 +411,7 @@ class DNGO(BaseModel):
         """
 
         inc, inc_value = super(DNGO, self).get_incumbent()
+        
         if self.normalize_input:
             inc = zero_mean_unit_var_denormalization(inc, self.X_mean, self.X_std)
 

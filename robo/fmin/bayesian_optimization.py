@@ -150,10 +150,10 @@ def bayesian_optimization(
             dtype = torch.float32
         search_domain = torch.from_numpy(np.stack([lower,upper],axis=-1))
         transformer = Transformer(
-            search_domain=search_domain, 
-            trans_method=transformer_config['trans_method'], 
-            trans_rbf_nrad=transformer_config['trans_rbf_nrad'],
-            trans_rbf_prodsum=transformer_config['trans_rbf_prodsum'],
+            method=transformer_config['trans_method'],
+            n_rad=transformer_config['trans_rbf_nrad'],
+            prodsum=transformer_config['trans_rbf_prodsum'],
+            search_domain=search_domain,  
             dtype=dtype 
         )
         print("Use {} with transformer {}".format(model_type), transformer_config['trans_method'])
@@ -172,10 +172,10 @@ def bayesian_optimization(
             dtype = torch.float32
         search_domain = torch.from_numpy(np.stack([lower,upper],axis=-1))
         transformer = Transformer(
-            search_domain=search_domain, 
-            trans_method=transformer_config['trans_method'], 
-            trans_rbf_nrad=transformer_config['trans_rbf_nrad'],
-            trans_rbf_prodsum=transformer_config['trans_rbf_prodsum'],
+            method=transformer_config['trans_method'],
+            n_rad=transformer_config['trans_rbf_nrad'],
+            prodsum=transformer_config['trans_rbf_prodsum'],
+            search_domain=search_domain,  
             dtype=dtype 
         )
         print("Use {} with transformer {}".format(model_type), transformer_config['trans_method'])

@@ -128,10 +128,12 @@ def bayesian_optimization(
         n_hypers += 1
 
     if model_type == "gp":
+        print("Use model {} and acquisition method {}".format(model_type, acquisition_func))
         model = GaussianProcess(kernel, prior=prior, rng=rng,
                                 normalize_output=False, normalize_input=True,
                                 lower=lower, upper=upper)
     elif model_type == "gp_mcmc":
+        print("Use model {} and acquisition method {}".format(model_type, acquisition_func))
         model = GaussianProcessMCMC(kernel, prior=prior,
                                     n_hypers=n_hypers,
                                     chain_length=200,
@@ -141,6 +143,7 @@ def bayesian_optimization(
                                     rng=rng, lower=lower, upper=upper)
 
     elif model_type == "rf":
+        print("Use model {} and acquisition method {}".format(model_type, acquisition_func))
         model = RandomForest(rng=rng)
 
     elif model_type == "bohamiann":
@@ -156,7 +159,8 @@ def bayesian_optimization(
             search_domain=search_domain,  
             dtype=dtype 
         )
-        print("Use {} with transformer {}".format(model_type, transformer_config['trans_method']))
+        print("Use model {} (transformer {}) with acquisition method {}".format(
+            model_type, transformer_config['trans_method'], acquisition_func))
         model = WrapperBohamiann(
             get_net=partial(get_default_network, n_hidden=nn_config['n_hidden']),
             transformer=transformer,
@@ -178,7 +182,7 @@ def bayesian_optimization(
             search_domain=search_domain,  
             dtype=dtype 
         )
-        print("Use {} with transformer {}".format(model_type, transformer_config['trans_method']))
+        print("Use model {} (transformer {}) with acquisition method {}".format(model_type, transformer_config['trans_method'], acquisition_func))
         model = DNGO(
             transformer=transformer,
             batch_size=nn_config['batch_size'], 

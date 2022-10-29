@@ -162,13 +162,22 @@ class Transformer(object):
         return torch.exp(-out)
                 
         
-    def __call__(self, x:Tensor) -> Tensor:
+    def __call__(self, x):
         """
-        Input x : torch tensor (..., d)
+        Input x : torch tensor or numpy array (..., d)
             -- n number of d-dimensional features to be transformed 
-        Output x : torch tensor (..., n_features)
+        Output x : torch tensor or numpy array (..., n_features)
             -- n_features depends on which transform method is used
         """ 
-        return self._TRANSFORMER[self.method](x) 
-
+        NonTensorFlag=False
+        if not torch.is_tensor(x):
+            x = torch.from_numpy(x)
+            NonTensorFlag=True
+        
+        result = self._TRANSFORMER[self.method](x) 
+        
+        if NonTensorFlag:
+            return result.numpy()
+        else:
+            return result
  

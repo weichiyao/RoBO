@@ -156,7 +156,7 @@ def bayesian_optimization(
             search_domain=search_domain,  
             dtype=dtype 
         )
-        print("Use {} with transformer {}".format(model_type), transformer_config['trans_method'])
+        print("Use {} with transformer {}".format(model_type, transformer_config['trans_method']))
         model = WrapperBohamiann(
             get_net=partial(get_default_network, n_hidden=nn_config['n_hidden']),
             transformer=transformer,
@@ -178,7 +178,7 @@ def bayesian_optimization(
             search_domain=search_domain,  
             dtype=dtype 
         )
-        print("Use {} with transformer {}".format(model_type), transformer_config['trans_method'])
+        print("Use {} with transformer {}".format(model_type, transformer_config['trans_method']))
         model = DNGO(
             transformer=transformer,
             batch_size=nn_config['batch_size'], 

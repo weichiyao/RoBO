@@ -108,7 +108,7 @@ def bayesian_optimization(
     """
     assert upper.shape[0] == lower.shape[0], "Dimension miss match"
     assert np.all(lower < upper), "Lower bound >= upper bound"
-    # assert n_init <= num_iterations, "Number of initial design point has to be <= than the number of iterations"
+    assert n_init <= num_iterations, "Number of initial design point has to be <= than the number of iterations"
 
     if rng is None:
         rng = np.random.RandomState(np.random.randint(0, 10000))

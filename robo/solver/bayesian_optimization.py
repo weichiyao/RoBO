@@ -65,8 +65,11 @@ class BayesianOptimization(BaseSolver):
         self.start_time = time.time()
         self.initial_design = initial_design
         self.objective_func = objective_func
+        
         self.X = None
         self.y = None
+        self.aux = None
+        
         self.time_func_evals = []
         self.time_overhead = []
         self.train_interval = train_interval
@@ -78,11 +81,12 @@ class BayesianOptimization(BaseSolver):
         self.incumbents = []
         self.incumbents_values = []
         self.incumbents_auxes = []
+        
         self.n_restarts = n_restarts
         self.init_points = initial_points
         self.runtime = []
 
-    def run(self, num_iterations=10, X=None, y=None):
+    def run(self, num_iterations=10, X=None, y=None, aux=None):
         """
         The main Bayesian optimization loop
         Parameters
@@ -93,12 +97,16 @@ class BayesianOptimization(BaseSolver):
             Initial points that are already evaluated
         y: np.ndarray(N,1)
             Function values of the already evaluated points
+        aux: np.ndarray(N,1)
+            Function auxiliary values of the already evaluated points
         Returns
         -------
         np.ndarray(1,D)
             Incumbent
         np.ndarray(1,1)
             (Estimated) function value of the incumbent
+        np.ndarray(1,1)
+            (Estimated) auxiliary value of the incumbent
         """
         # Save the time where we start the Bayesian optimization procedure
         self.time_start = time.time()
@@ -122,7 +130,13 @@ class BayesianOptimization(BaseSolver):
                 logger.info("Evaluate: %s", x)
 
                 start_time = time.time()
-                new_y, new_aux = self.objective_func(x)
+                new_res = self.objective_func(x)
+                if new_res.shape[-1] == 2:
+                    new_y   = new_res[...,0]
+                    new_aux = new_res[...,1]
+                else:
+                    new_y = new_res
+                    new_aux = np.zeros_like(new_y)
 
                 X.append(x)
                 y.append(new_y)
@@ -177,22 +191,28 @@ class BayesianOptimization(BaseSolver):
 
             # Evaluate
             start_time = time.time()
-            new_y, new_aux = self.objective_func(new_x)
+            new_res = self.objective_func(new_x)
+            if new_res.shape[-1] == 2:
+                new_y   = new_res[...,0]
+                new_aux = new_res[...,1]
+            else:
+                new_y   = new_res
+                new_aux = np.zeros_like(new_y)
             self.time_func_evals.append(time.time() - start_time)
 
             logger.info("Configuration achieved a performance of %f ", new_y)
             logger.info("Evaluation of this configuration took %f seconds", self.time_func_evals[-1])
 
             # Extend the data
-            self.X = np.append(self.X, new_x[None, :], axis=0)
-            self.y = np.append(self.y, new_y)
+            self.X   = np.append(self.X, new_x[None, :], axis=0)
+            self.y   = np.append(self.y, new_y)
             self.aux = np.append(self.aux, new_aux)
 
             # Estimate incumbent
-            best_idx = np.argmin(self.y)
-            incumbent = self.X[best_idx]
+            best_idx        = np.argmin(self.y)
+            incumbent       = self.X[best_idx]
             incumbent_value = self.y[best_idx]
-            incumbent_aux = self.aux[best_idx]
+            incumbent_aux   = self.aux[best_idx]
 
             self.incumbents.append(incumbent.tolist())
             self.incumbents_values.append(incumbent_value)

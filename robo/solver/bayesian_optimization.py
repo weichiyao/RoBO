@@ -168,7 +168,10 @@ class BayesianOptimization(BaseSolver):
         else:
             self.X = X
             self.y = y
-            self.aux = aux
+            if aux is None:
+                self.aux = np.zeros_like(y)
+            else:
+                self.aux = aux
             self.init_points = self.X.shape[0]
 
         # Main Bayesian optimization loop

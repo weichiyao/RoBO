@@ -131,12 +131,14 @@ class BayesianOptimization(BaseSolver):
 
                 start_time = time.time()
                 new_res = self.objective_func(x)
-                if new_res.shape[-1] == 2:
+                if len(new_res) == 2:
                     new_y   = new_res[...,0]
                     new_aux = new_res[...,1]
-                else:
+                elif len(new_res) == 1:
                     new_y = new_res
                     new_aux = np.zeros_like(new_y)
+                else:
+                    raise ValueError(f"Current setup only allow objective function to provide up to two outputs. Received {new_res} of length {len(new_res)}.")
 
                 X.append(x)
                 y.append(new_y)
@@ -195,12 +197,14 @@ class BayesianOptimization(BaseSolver):
             # Evaluate
             start_time = time.time()
             new_res = self.objective_func(new_x)
-            if new_res.shape[-1] == 2:
+            if len(new_res) == 2:
                 new_y   = new_res[...,0]
                 new_aux = new_res[...,1]
-            else:
+            elif len(new_res) == 1:
                 new_y   = new_res
                 new_aux = np.zeros_like(new_y)
+            else:
+                raise ValueError(f"Current setup only allow objective function to provide up to two outputs. Received {new_res} of length {len(new_res)}.")
             self.time_func_evals.append(time.time() - start_time)
 
             logger.info("Configuration achieved a performance of %f ", new_y)

@@ -77,6 +77,7 @@ class BayesianOptimization(BaseSolver):
 
         self.incumbents = []
         self.incumbents_values = []
+        self.incumbents_auxes = []
         self.n_restarts = n_restarts
         self.init_points = initial_points
         self.runtime = []
@@ -107,6 +108,7 @@ class BayesianOptimization(BaseSolver):
             # Initial design
             X = []
             y = []
+            aux = []
 
             start_time_overhead = time.time()
             init = self.initial_design(self.lower,
@@ -120,10 +122,11 @@ class BayesianOptimization(BaseSolver):
                 logger.info("Evaluate: %s", x)
 
                 start_time = time.time()
-                new_y = self.objective_func(x)
+                new_y, new_aux = self.objective_func(x)
 
                 X.append(x)
                 y.append(new_y)
+                aux.append(new_aux)
                 self.time_func_evals.append(time.time() - start_time)
                 self.time_overhead.append(time_overhead)
 
@@ -131,12 +134,14 @@ class BayesianOptimization(BaseSolver):
                             y[i], self.time_func_evals[i])
 
                 # Use best point seen so far as incumbent
-                best_idx = np.argmin(y)
-                incumbent = X[best_idx]
+                best_idx        = np.argmin(y)
+                incumbent       = X[best_idx]
                 incumbent_value = y[best_idx]
+                incumbent_aux   = aux[best_idx]
 
                 self.incumbents.append(incumbent.tolist())
                 self.incumbents_values.append(incumbent_value)
+                self.incumbents_auxes.append(incumbent_aux)
 
                 self.runtime.append(time.time() - self.start_time)
 
@@ -145,9 +150,11 @@ class BayesianOptimization(BaseSolver):
 
             self.X = np.array(X)
             self.y = np.array(y)
+            self.aux = np.array(aux)
         else:
             self.X = X
             self.y = y
+            self.aux = aux
             self.init_points = self.X.shape[0]
 
         # Main Bayesian optimization loop
@@ -170,7 +177,7 @@ class BayesianOptimization(BaseSolver):
 
             # Evaluate
             start_time = time.time()
-            new_y = self.objective_func(new_x)
+            new_y, new_aux = self.objective_func(new_x)
             self.time_func_evals.append(time.time() - start_time)
 
             logger.info("Configuration achieved a performance of %f ", new_y)
@@ -179,14 +186,17 @@ class BayesianOptimization(BaseSolver):
             # Extend the data
             self.X = np.append(self.X, new_x[None, :], axis=0)
             self.y = np.append(self.y, new_y)
+            self.aux = np.append(self.aux, new_aux)
 
             # Estimate incumbent
             best_idx = np.argmin(self.y)
             incumbent = self.X[best_idx]
             incumbent_value = self.y[best_idx]
+            incumbent_aux = self.aux[best_idx]
 
             self.incumbents.append(incumbent.tolist())
             self.incumbents_values.append(incumbent_value)
+            self.incumbents_auxes.append(incumbent_aux)
             logger.info("Current incumbent %s with estimated performance %f",
                         str(incumbent), incumbent_value)
 
@@ -198,7 +208,7 @@ class BayesianOptimization(BaseSolver):
         logger.info("Return %s as incumbent with error %f ",
                     self.incumbents[-1], self.incumbents_values[-1])
 
-        return self.incumbents[-1], self.incumbents_values[-1]
+        return self.incumbents[-1], self.incumbents_values[-1], self.incumbents_auxes[-1] 
 
     def choose_next(self, X=None, y=None, do_optimize=True):
         """
@@ -250,8 +260,9 @@ class BayesianOptimization(BaseSolver):
         data = dict()
         data["optimization_overhead"] = self.time_overhead[it]
         data["runtime"] = self.runtime[it]
-        data["incumbent"] = self.incumbents[it]
-        data["incumbents_value"] = self.incumbents_values[it]
+        data["incumbents"] = self.incumbents[it]
+        data["incumbents_values"] = self.incumbents_values[it]
+        data["incumbents_auxes"] = self.incumbents_auxes[it]
         data["time_func_eval"] = self.time_func_evals[it]
         data["iteration"] = it
 

@@ -58,7 +58,7 @@ class BaseSolver(object):
         self.json_writer = None
 
     def get_observations(self):
-        return self.X, self.Y
+        return self.X, self.Y, self.aux
 
     def get_model(self):
         if self.model is None:
@@ -115,6 +115,7 @@ class BaseSolver(object):
         jsonData = {"optimization_overhead":self.time_overhead[it], "runtime": time.time() - self.time_start,
                     "incumbent": self.incumbent.tolist(),
                     "incumbent_fval": self.incumbent_value.tolist(),
+                    "incumbent_faux": self.incumbent_aux.tolist(),
                     "time_func_eval": self.time_func_eval[it],
                     "iteration": it}
         return jsonData

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def entropy_search(objective_function, lower, upper, num_iterations=30,
-                   maximizer="random", model="gp_mcmc", X_init=None, Y_init=None,
+                   maximizer="random", model="gp_mcmc", X_init=None, Y_init=None, Aux_init=None,
                    n_init=3, output_path=None, rng=None):
     """
     Entropy search for global black box optimization problems. This is a reimplemenation of the entropy search
@@ -47,6 +47,8 @@ def entropy_search(objective_function, lower, upper, num_iterations=30,
             Initial points to warmstart BO
     Y_init: np.ndarray(N,1)
             Function values of the already initial points
+    Aux_init: np.ndarray(N,1)
+            Function auxiliary values of the already initial points
     n_init: int
         Number of points for the initial design. Make sure that it is <= num_iterations.
     output_path: string
@@ -117,15 +119,18 @@ def entropy_search(objective_function, lower, upper, num_iterations=30,
                               initial_design=init_latin_hypercube_sampling,
                               initial_points=n_init, rng=rng, output_path=output_path)
 
-    x_best, f_min = bo.run(num_iterations, X=X_init, y=Y_init)
+    x_best, fval_min, aux_min = bo.run(num_iterations, X=X_init, y=Y_init, aux=Aux_init)
 
     results = dict()
     results["x_opt"] = x_best
-    results["f_opt"] = f_min
+    results["f_opt"] = fval_min
+    results["aux_opt"] = aux_min
     results["incumbents"] = [inc for inc in bo.incumbents]
-    results["incumbent_values"] = [val for val in bo.incumbents_values]
+    results["incumbents_values"] = [val for val in bo.incumbents_values]
+    results["incumbents_auxes"]  = [val for val in bo.incumbents_auxes]
     results["runtime"] = bo.runtime
     results["overhead"] = bo.time_overhead
     results["X"] = [x.tolist() for x in bo.X]
     results["y"] = [y for y in bo.y]
+    results["aux"] = [y for y in bo.aux]
     return results

@@ -61,7 +61,7 @@ def get_default_network(input_dimensionality: int, n_hidden=[784,50]) -> torch.n
 
 
 def bayesian_optimization(
-    objective_function, lower, upper, num_iterations=30, X_init=None, Y_init=None,
+    objective_function, lower, upper, num_iterations=30, X_init=None, Y_init=None, Aux_init=None,
     maximizer="random", acquisition_func="log_ei", model_type="gp_mcmc",
     n_init=3, rng=None, output_path=None, 
     nn_config={'n_hidden':[784,50], 'lr': 1e-3, 'use_double':False,
@@ -87,6 +87,8 @@ def bayesian_optimization(
             Initial points to warmstart BO
     Y_init: np.ndarray(N,1)
             Function values of the already initial points
+    Aux_init: np.ndarray(N,1)
+            Function auxiliary values of the already initial points
     maximizer: {"random", "scipy", "differential_evolution"}
         The optimizer for the acquisition function.
     acquisition_func: {"ei", "log_ei", "lcb", "pi"}
@@ -227,15 +229,18 @@ def bayesian_optimization(
                               initial_design=init_latin_hypercube_sampling,
                               output_path=output_path)
 
-    x_best, f_min = bo.run(num_iterations, X=X_init, y=Y_init)
+    x_best, fval_min, aux_min = bo.run(num_iterations, X=X_init, y=Y_init, aux=Aux_init)
 
     results = dict()
     results["x_opt"] = x_best
-    results["f_opt"] = f_min
+    results["f_opt"] = fval_min
+    results["aux_opt"] = aux_min
     results["incumbents"] = [inc for inc in bo.incumbents]
-    results["incumbent_values"] = [val for val in bo.incumbents_values]
+    results["incumbents_values"] = [val for val in bo.incumbents_values]
+    results["incumbents_auxes"]  = [val for val in bo.incumbents_auxes]
     results["runtime"] = bo.runtime
     results["overhead"] = bo.time_overhead
     results["X"] = [x.tolist() for x in bo.X]
     results["y"] = [y for y in bo.y]
+    results["aux"] = [aux for aux in bo.aux]
     return results
